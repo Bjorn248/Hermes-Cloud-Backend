@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "h1H1H6zbGCKu2/6nDZDfo3qE6yA=",
+			"path": "github.com/aws/aws-sdk-go",
+			"revision": "2bdfce6fef51bb7099412b64c8872b1ecd88c8d0",
+			"revisionTime": "2018-05-30T21:57:02Z"
+		}
+	],
+	"rootPath": "github.com/Bjorn248/Hermes-Cloud-Backend"
+}
