@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "Atnv24CtEnB8ZLGDqFevLMfzLtQ=",
+			"path": "github.com/aws/aws-lambda-go/lambda",
+			"revision": "4d30d0ff60440c2d0480a15747c96ee71c3c53d4",
+			"revisionTime": "2018-04-20T04:06:44Z"
+		},
+		{
 			"checksumSHA1": "h1H1H6zbGCKu2/6nDZDfo3qE6yA=",
 			"path": "github.com/aws/aws-sdk-go",
 			"revision": "2bdfce6fef51bb7099412b64c8872b1ecd88c8d0",
