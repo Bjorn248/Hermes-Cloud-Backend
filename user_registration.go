@@ -21,9 +21,9 @@ type Response struct {
 	Message string `json:"Response"`
 }
 
-// HandleRequest is the lambda function handler
+// CreateUser is the lambda function handler
 // it processes the creation of the cognito user
-func HandleRequest(ctx context.Context, evt UserRegEvent) (Response, error) {
+func CreateUser(ctx context.Context, evt UserRegEvent) (Response, error) {
 	var cognitoAppClientID string
 	if os.Getenv("COGNITO_APP_CLIENT_ID") == "" {
 		log.Fatal("COGNITO_APP_CLIENT_ID not set")
@@ -41,24 +41,23 @@ func HandleRequest(ctx context.Context, evt UserRegEvent) (Response, error) {
 		Password: &evt.Password,
 	}
 
-	cognitoResponse, err := cognitoService.SignUp(&cognitoInput)
+	_, err := cognitoService.SignUp(&cognitoInput)
 	if err != nil {
 		return Response{Message: "Error creating user: "}, err
 	}
-	fmt.Println(cognitoResponse)
 	return Response{Message: fmt.Sprintf("Successfully created user %s", evt.Username)}, nil
 }
 
 func main() {
 	if os.Getenv("AWS_PROFILE") != "" {
-		fmt.Printf("Using AWS Profile: %s\n", os.Getenv("AWS_PROFILE"))
+		log.Printf("Using AWS Profile: %s\n", os.Getenv("AWS_PROFILE"))
 	} else {
-		fmt.Println("Using AWS Profile: default")
+		log.Println("Using AWS Profile: default")
 	}
 
 	if os.Getenv("AWS_REGION") == "" {
 		log.Fatal("AWS_REGION not set")
 	}
 
-	lambda.Start(HandleRequest)
+	lambda.Start(CreateUser)
 }
