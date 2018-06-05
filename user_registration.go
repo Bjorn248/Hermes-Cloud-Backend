@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	// "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"os"
 )
@@ -34,6 +37,7 @@ func CreateUser(ctx context.Context, evt UserRegEvent) (Response, error) {
 	sess := session.Must(session.NewSession())
 
 	cognitoService := cognitoidentityprovider.New(sess)
+	dynamoService := dynamodb.New(sess)
 
 	cognitoInput := cognitoidentityprovider.SignUpInput{
 		ClientId: &cognitoAppClientID,
@@ -41,10 +45,36 @@ func CreateUser(ctx context.Context, evt UserRegEvent) (Response, error) {
 		Password: &evt.Password,
 	}
 
-	_, err := cognitoService.SignUp(&cognitoInput)
+	cognitoResponse, err := cognitoService.SignUp(&cognitoInput)
 	if err != nil {
-		return Response{Message: "Error creating user: "}, err
+		return Response{Message: "Error creating cognito user: "}, err
 	}
+
+	userUUID := cognitoResponse.UserSub
+
+	// TODO: dynamodbattribute.MarshalMap does not work!? Need to figure out why, for now, we'll make the
+	// required structs manually
+
+	uuidAttributeValue := dynamodb.AttributeValue{
+		S: userUUID,
+	}
+
+	var dynamoInputItem map[string]*dynamodb.AttributeValue
+
+	dynamoInputItem = make(map[string]*dynamodb.AttributeValue)
+
+	dynamoInputItem["userID"] = &uuidAttributeValue
+
+	dynamoInput := dynamodb.PutItemInput{
+		TableName: aws.String("users"),
+		Item:      dynamoInputItem,
+	}
+
+	_, err = dynamoService.PutItem(&dynamoInput)
+	if err != nil {
+		return Response{Message: "Error creating dynamo user entry: "}, err
+	}
+
 	return Response{Message: fmt.Sprintf("Successfully created user %s", evt.Username)}, nil
 }
 
