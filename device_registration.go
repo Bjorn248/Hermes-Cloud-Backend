@@ -58,8 +58,9 @@ func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 	dynamoInputItem["Owner"] = &ownerAttributeValue
 
 	dynamoInput := dynamodb.PutItemInput{
-		TableName: aws.String("devices"),
-		Item:      dynamoInputItem,
+		ConditionExpression: aws.String("attribute_not_exists(MAC)"),
+		TableName:           aws.String("devices"),
+		Item:                dynamoInputItem,
 	}
 
 	_, err := dynamoService.PutItem(&dynamoInput)
