@@ -12,4 +12,5 @@
 *.out
 
 user_registration
-user_registration.zip
+device_registration
+*.zip

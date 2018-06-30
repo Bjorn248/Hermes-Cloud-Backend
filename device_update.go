@@ -6,17 +6,16 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	// "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"os"
 )
 
-// UserRegEvent defines the request structure of this user creation request
-type UserRegEvent struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+// DeviceUpdateEvent defines the request structure of this user creation request
+type DeviceUpdateEvent struct {
+	Name   string `json:"name"`
+	Status int    `json:"status"`
 }
 
 // Response defines the response structure to this user creation request
@@ -24,46 +23,31 @@ type Response struct {
 	Message string `json:"Response"`
 }
 
-// CreateUser is the lambda function handler
+// UpdateDevice is the lambda function handler
 // it processes the creation of the cognito user
-func CreateUser(ctx context.Context, evt UserRegEvent) (Response, error) {
-	var cognitoAppClientID string
-	if os.Getenv("COGNITO_APP_CLIENT_ID") == "" {
-		log.Fatal("COGNITO_APP_CLIENT_ID not set")
-	} else {
-		cognitoAppClientID = os.Getenv("COGNITO_APP_CLIENT_ID")
-	}
+func UpdateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 
 	sess := session.Must(session.NewSession())
 
-	cognitoService := cognitoidentityprovider.New(sess)
 	dynamoService := dynamodb.New(sess)
-
-	cognitoInput := cognitoidentityprovider.SignUpInput{
-		ClientId: &cognitoAppClientID,
-		Email:    &evt.Email,
-		Password: &evt.Password,
-	}
-
-	cognitoResponse, err := cognitoService.SignUp(&cognitoInput)
-	if err != nil {
-		return Response{Message: "Error creating cognito user: "}, err
-	}
-
-	userUUID := cognitoResponse.UserSub
 
 	// TODO: dynamodbattribute.MarshalMap does not work!? Need to figure out why, for now, we'll make the
 	// required structs manually
 
-	uuidAttributeValue := dynamodb.AttributeValue{
-		S: userUUID,
+	macAttributeValue := dynamodb.AttributeValue{
+		S: evt.MAC,
+	}
+
+	nameAttributeValue := dynamodb.AttributeValue{
+		S: evt.Name,
 	}
 
 	var dynamoInputItem map[string]*dynamodb.AttributeValue
 
 	dynamoInputItem = make(map[string]*dynamodb.AttributeValue)
 
-	dynamoInputItem["userID"] = &uuidAttributeValue
+	dynamoInputItem["MAC"] = &uuidAttributeValue
+	dynamoInputItem["Name"] = &uuidAttributeValue
 
 	dynamoInput := dynamodb.PutItemInput{
 		TableName: aws.String("users"),
@@ -75,7 +59,7 @@ func CreateUser(ctx context.Context, evt UserRegEvent) (Response, error) {
 		return Response{Message: "Error creating dynamo user entry: "}, err
 	}
 
-	return Response{Message: fmt.Sprintf("Successfully created user %s", evt.Email)}, nil
+	return Response{Message: fmt.Sprintf("Successfully created user %s", evt.Devicename)}, nil
 }
 
 func main() {
@@ -89,5 +73,5 @@ func main() {
 		log.Fatal("AWS_REGION not set")
 	}
 
-	lambda.Start(CreateUser)
+	lambda.Start(UpdateDevice)
 }
