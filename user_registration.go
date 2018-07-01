@@ -41,7 +41,7 @@ func CreateUser(ctx context.Context, evt UserRegEvent) (Response, error) {
 
 	cognitoInput := cognitoidentityprovider.SignUpInput{
 		ClientId: &cognitoAppClientID,
-		Email:    &evt.Email,
+		Username: &evt.Email,
 		Password: &evt.Password,
 	}
 
