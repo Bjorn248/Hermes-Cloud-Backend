@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"strings"
 	// "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"os"
@@ -53,22 +52,54 @@ func UpdateDevice(ctx context.Context, evt DeviceUpdateEvent) (Response, error) 
 
 	dynamoUpdateExpressionString = "SET"
 
-	var updateStringArray []string
+	var expressionAttributeNames map[string]*string
+	var expressionAttributeValues map[string]*dynamodb.AttributeValue
 
-	if evt.Name != "" && evt.Status != "" {
-		updateStringArray = []string{dynamoUpdateExpressionString, fmt.Sprintf(" Name = %s, Status = %s", evt.Name, evt.Status)}
-	} else if evt.Name != "" {
-		updateStringArray = []string{dynamoUpdateExpressionString, fmt.Sprintf(" Name = %s", evt.Name)}
-	} else if evt.Status != "" {
-		updateStringArray = []string{dynamoUpdateExpressionString, fmt.Sprintf(" Status = %s", evt.Status)}
+	Name := "Name"
+	Status := "Status"
+
+	statusAttributeValue := dynamodb.AttributeValue{
+		S: &evt.Status,
 	}
 
-	dynamoUpdateExpressionString = strings.Join(updateStringArray, "")
+	nameAttributeValue := dynamodb.AttributeValue{
+		S: &evt.Name,
+	}
+
+	if evt.Name != "" && evt.Status != "" {
+		dynamoUpdateExpressionString = "SET #N = :n, #S = :s"
+		expressionAttributeNames = map[string]*string{
+			"#N": &Name,
+			"#S": &Status,
+		}
+		expressionAttributeValues = map[string]*dynamodb.AttributeValue{
+			":n": &nameAttributeValue,
+			":s": &statusAttributeValue,
+		}
+	} else if evt.Name != "" {
+		dynamoUpdateExpressionString = "SET #N = :n"
+		expressionAttributeNames = map[string]*string{
+			"#N": &Name,
+		}
+		expressionAttributeValues = map[string]*dynamodb.AttributeValue{
+			":n": &nameAttributeValue,
+		}
+	} else if evt.Status != "" {
+		dynamoUpdateExpressionString = "SET #S = :s"
+		expressionAttributeNames = map[string]*string{
+			"#S": &Status,
+		}
+		expressionAttributeValues = map[string]*dynamodb.AttributeValue{
+			":s": &statusAttributeValue,
+		}
+	}
 
 	dynamoInput := dynamodb.UpdateItemInput{
-		TableName:        aws.String("devices"),
-		Key:              dynamoUpdateKey,
-		UpdateExpression: aws.String(dynamoUpdateExpressionString),
+		TableName:                 aws.String("devices"),
+		Key:                       dynamoUpdateKey,
+		UpdateExpression:          aws.String(dynamoUpdateExpressionString),
+		ExpressionAttributeNames:  expressionAttributeNames,
+		ExpressionAttributeValues: expressionAttributeValues,
 	}
 
 	_, err := dynamoService.UpdateItem(&dynamoInput)
