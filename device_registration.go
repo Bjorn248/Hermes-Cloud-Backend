@@ -68,24 +68,27 @@ func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 	if err != nil {
 		return Response{Message: "Error creating dynamo device entry: "}, err
 	}
-	var userDeviceMap map[string]*dynamodb.AttributeValue
-	userDeviceMap = make(map[string]*dynamodb.AttributeValue)
 
-	trueBool := true
+	/*
+		var userDeviceMap map[string]*dynamodb.AttributeValue
+		userDeviceMap = make(map[string]*dynamodb.AttributeValue)
 
-	trueAttributeValue := dynamodb.AttributeValue{
-		BOOL: &trueBool,
-	}
+		trueBool := true
 
-	userDeviceMap[evt.MAC] = &trueAttributeValue
+		trueAttributeValue := dynamodb.AttributeValue{
+			BOOL: &trueBool,
+		}
 
-	userDeviceAttributeValue := dynamodb.AttributeValue{
-		M: userDeviceMap,
-	}
+		userDeviceMap[evt.MAC] = &trueAttributeValue
+
+		userDeviceAttributeValue := dynamodb.AttributeValue{
+			M: userDeviceMap,
+		}
+	*/
 
 	lc, _ := lambdacontext.FromContext(ctx)
 
-	log.Print(lc)
+	log.Printf("%+v\n", lc)
 
 	return Response{Message: fmt.Sprintf("Successfully registered device %s", evt.MAC)}, nil
 }
