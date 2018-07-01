@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -67,6 +68,24 @@ func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 	if err != nil {
 		return Response{Message: "Error creating dynamo device entry: "}, err
 	}
+	var userDeviceMap map[string]*dynamodb.AttributeValue
+	userDeviceMap = make(map[string]*dynamodb.AttributeValue)
+
+	trueBool := true
+
+	trueAttributeValue := dynamodb.AttributeValue{
+		BOOL: &trueBool,
+	}
+
+	userDeviceMap[evt.MAC] = &trueAttributeValue
+
+	userDeviceAttributeValue := dynamodb.AttributeValue{
+		M: userDeviceMap,
+	}
+
+	lc, _ := lambdacontext.FromContext(ctx)
+
+	log.Print(lc)
 
 	return Response{Message: fmt.Sprintf("Successfully registered device %s", evt.MAC)}, nil
 }

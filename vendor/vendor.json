@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "uyUBH/Z1eFC4++FFtFZz1MpjV0s=",
+			"checksumSHA1": "GSVlFQYu304qTMdOqDBTYnh+9mI=",
 			"path": "github.com/Bjorn248/Hermes-Cloud-Backend",
-			"revision": "42c1724400090aecd59c067fce8ad116797ad7cf",
-			"revisionTime": "2018-06-05T04:04:54Z"
+			"revision": "9e3275ee2b13521b8fd392e67f8d90356f7055d2",
+			"revisionTime": "2018-06-30T21:33:17Z"
 		},
 		{
 			"checksumSHA1": "Atnv24CtEnB8ZLGDqFevLMfzLtQ=",
