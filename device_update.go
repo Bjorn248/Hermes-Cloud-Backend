@@ -4,28 +4,30 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"strings"
 	// "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"os"
 )
 
-// DeviceUpdateEvent defines the request structure of this user creation request
+// DeviceUpdateEvent defines the request structure of this device update request
 type DeviceUpdateEvent struct {
+	MAC    string `json:"mac"`
 	Name   string `json:"name"`
-	Status int    `json:"status"`
+	Status string `json:"status"`
 }
 
-// Response defines the response structure to this user creation request
+// Response defines the response structure to this device update request
 type Response struct {
 	Message string `json:"Response"`
 }
 
 // UpdateDevice is the lambda function handler
-// it processes the creation of the cognito user
-func UpdateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
+func UpdateDevice(ctx context.Context, evt DeviceUpdateEvent) (Response, error) {
 
 	sess := session.Must(session.NewSession())
 
@@ -35,31 +37,67 @@ func UpdateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 	// required structs manually
 
 	macAttributeValue := dynamodb.AttributeValue{
-		S: evt.MAC,
+		S: &evt.MAC,
 	}
 
-	nameAttributeValue := dynamodb.AttributeValue{
-		S: evt.Name,
+	var dynamoUpdateKey map[string]*dynamodb.AttributeValue
+
+	dynamoUpdateKey = make(map[string]*dynamodb.AttributeValue)
+
+	dynamoUpdateKey["MAC"] = &macAttributeValue
+
+	// TODO add cognito token and MAC verification at the beginning of
+	// this function
+
+	var dynamoUpdateExpressionString string
+
+	dynamoUpdateExpressionString = "SET"
+
+	var updateStringArray []string
+
+	if evt.Name != "" && evt.Status != "" {
+		updateStringArray = []string{dynamoUpdateExpressionString, fmt.Sprintf(" Name = %s, Status = %s", evt.Name, evt.Status)}
+	} else if evt.Name != "" {
+		updateStringArray = []string{dynamoUpdateExpressionString, fmt.Sprintf(" Name = %s", evt.Name)}
+	} else if evt.Status != "" {
+		updateStringArray = []string{dynamoUpdateExpressionString, fmt.Sprintf(" Status = %s", evt.Status)}
 	}
 
-	var dynamoInputItem map[string]*dynamodb.AttributeValue
+	dynamoUpdateExpressionString = strings.Join(updateStringArray, "")
 
-	dynamoInputItem = make(map[string]*dynamodb.AttributeValue)
-
-	dynamoInputItem["MAC"] = &uuidAttributeValue
-	dynamoInputItem["Name"] = &uuidAttributeValue
-
-	dynamoInput := dynamodb.PutItemInput{
-		TableName: aws.String("users"),
-		Item:      dynamoInputItem,
+	dynamoInput := dynamodb.UpdateItemInput{
+		TableName:        aws.String("devices"),
+		Key:              dynamoUpdateKey,
+		UpdateExpression: aws.String(dynamoUpdateExpressionString),
 	}
 
-	_, err = dynamoService.PutItem(&dynamoInput)
+	_, err := dynamoService.UpdateItem(&dynamoInput)
 	if err != nil {
-		return Response{Message: "Error creating dynamo user entry: "}, err
+		return Response{Message: "Error updating dynamo device entry: "}, err
 	}
 
-	return Response{Message: fmt.Sprintf("Successfully created user %s", evt.Devicename)}, nil
+	/*
+		var userDeviceMap map[string]*dynamodb.AttributeValue
+		userDeviceMap = make(map[string]*dynamodb.AttributeValue)
+
+		trueBool := true
+
+		trueAttributeValue := dynamodb.AttributeValue{
+			BOOL: &trueBool,
+		}
+
+		userDeviceMap[evt.MAC] = &trueAttributeValue
+
+		userDeviceAttributeValue := dynamodb.AttributeValue{
+			M: userDeviceMap,
+		}
+	*/
+
+	lc, _ := lambdacontext.FromContext(ctx)
+
+	log.Printf("%+v\n", lc)
+
+	return Response{Message: fmt.Sprintf("Successfully updated device %s", evt.MAC)}, nil
 }
 
 func main() {
