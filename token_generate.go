@@ -61,7 +61,7 @@ func CreateToken(ctx context.Context, evt TokenGenEvent) (Response, error) {
 		return Response{Message: "Error creating cognito token: "}, err
 	}
 
-	return Response{Message: fmt.Sprintf("Successfully created token"), Token: cognitoResponse.AuthenticationResult.AccessToken}, nil
+	return Response{Message: fmt.Sprintf("Successfully created token"), Token: cognitoResponse.AuthenticationResult.IdToken}, nil
 }
 
 func main() {

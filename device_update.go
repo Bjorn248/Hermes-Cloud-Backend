@@ -126,7 +126,12 @@ func UpdateDevice(ctx context.Context, evt DeviceUpdateEvent) (Response, error) 
 
 	lc, _ := lambdacontext.FromContext(ctx)
 
-	log.Printf("%+v\n", lc)
+	log.Print("EntityID Below")
+	log.Print(lc.Identity.CognitoIdentityID)
+	log.Print("EntityID Above")
+
+	// TODO Figure out how to access the token being provided to API Gateway
+	// inside this lambda function...it is NOT in the context!
 
 	return Response{Message: fmt.Sprintf("Successfully updated device %s", evt.MAC)}, nil
 }
