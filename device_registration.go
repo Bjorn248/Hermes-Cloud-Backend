@@ -38,8 +38,6 @@ func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 	// TODO: dynamodbattribute.MarshalMap does not work!? Need to figure out why, for now, we'll make the
 	// required structs manually
 
-	initialStatus := "offline"
-
 	macAttributeValue := dynamodb.AttributeValue{
 		S: &evt.MAC,
 	}
@@ -53,7 +51,7 @@ func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 	}
 
 	statusAttributeValue := dynamodb.AttributeValue{
-		S: &initialStatus,
+		S: aws.String("offline"),
 	}
 
 	var dynamoInputItem map[string]*dynamodb.AttributeValue
