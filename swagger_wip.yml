@@ -1,0 +1,70 @@
+swagger: "2.0"
+info:
+  description: "These are the series of endpoints that make up the Hermes Cloud Backend"
+  version: "0.0.1"
+  title: "Hermes Cloud Backend"
+  contact:
+    email: "bjorn248@gmail.com"
+  license:
+    name: "GPLV3"
+    url: "https://github.com/Bjorn248/Hermes-Cloud-Backend/blob/master/LICENSE"
+host: "APIGATEWAY_URL"
+basePath: "/dev"
+tags:
+- name: "register"
+  description: "Register a user"
+- name: "device"
+  description: "Add and modify devices"
+schemes:
+- "https"
+paths:
+  /register:
+    post:
+      tags:
+      - "register"
+      summary: "Sign up for Hermes Cloud"
+      description: ""
+      operationId: "addUser"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Email and password for user registration"
+        required: true
+        schema:
+          $ref: '#/definitions/UserCreation'
+      responses:
+        200:
+          description: "User created successfully"
+        409:
+          description: "Conflict: User Exists"
+      security:
+      - petstore_auth:
+        - "write:pets"
+        - "read:pets"
+securityDefinitions:
+  petstore_auth:
+    type: "oauth2"
+    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
+    flow: "implicit"
+    scopes:
+      write:pets: "modify pets in your account"
+      read:pets: "read your pets"
+  api_key:
+    type: "apiKey"
+    name: "api_key"
+    in: "header"
+definitions:
+  UserCreation:
+    type: "object"
+    properties:
+      email:
+        type: "string"
+      password:
+        type: "string"
+externalDocs:
+  description: "Find out more about Swagger"
+  url: "http://swagger.io"
