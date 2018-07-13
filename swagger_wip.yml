@@ -35,36 +35,106 @@ paths:
         description: "Email and password for user registration"
         required: true
         schema:
-          $ref: '#/definitions/UserCreation'
+          $ref: '#/definitions/UserCreationRequest'
       responses:
         200:
           description: "User created successfully"
+          schema:
+            $ref: '#/definitions/UserAndDeviceCreationResponse'
         409:
           description: "Conflict: User Exists"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-securityDefinitions:
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
-    flow: "implicit"
-    scopes:
-      write:pets: "modify pets in your account"
-      read:pets: "read your pets"
-  api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
+  /device:
+    post:
+      tags:
+      - "device"
+      summary: "Device Management Endpoint"
+      description: ""
+      operationId: "addDevice"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: header
+        name: X-HERMES-CLOUD-TOKEN
+        description: "Token to access this protected endpoint"
+        required: true
+        type: "string"
+      - in: body
+        name: "body"
+        description: "Required info to register a device"
+        required: true
+        schema:
+          $ref: '#/definitions/DeviceRegistrationRequest'
+      responses:
+        200:
+          description: "Device created successfully"
+          schema:
+            $ref: '#/definitions/UserAndDeviceCreationResponse'
+    put:
+      tags:
+      - "device"
+      summary: "Device Management Endpoint"
+      description: ""
+      operationId: "modifyDevice"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: header
+        name: X-HERMES-CLOUD-TOKEN
+        description: "Token to access this protected endpoint"
+        required: true
+        type: "string"
+      - in: body
+        name: "body"
+        description: "Required info to register a device"
+        required: true
+        schema:
+          $ref: '#/definitions/DeviceModificationRequest'
+      responses:
+        200:
+          description: "Device updated successfully"
+          schema:
+            $ref: '#/definitions/UserAndDeviceCreationResponse'
 definitions:
-  UserCreation:
+  UserCreationRequest:
     type: "object"
     properties:
       email:
         type: "string"
       password:
         type: "string"
+  UserAndDeviceCreationResponse:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+  DeviceRegistrationRequest:
+    type: "object"
+    properties:
+      mac:
+        type: "string"
+      name:
+        type: "string"
+      owner:
+        type: "string"
+    required:
+      - mac
+      - name
+      - owner
+  DeviceModificationRequest:
+    type: "object"
+    properties:
+      mac:
+        type: "string"
+      name:
+        type: "string"
+      status:
+        type: "string"
+    required:
+      - mac
 externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"
+  description: "Contribute"
+  url: "https://github.com/Bjorn248/Hermes-Cloud-Backend"
