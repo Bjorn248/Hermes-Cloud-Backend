@@ -58,6 +58,8 @@ functions:
   user_registration:
     handler: bin/user_registration
     role: userRegistrationRole
+    environment:
+      COGNITO_APP_CLIENT_ID: ${opt:cognito_app_client_id}
   device_registration:
     handler: bin/device_registration
     role: deviceRegistrationRole
@@ -143,10 +145,7 @@ resources:
                         - 'arn:aws:cognito-idp'
                         - Ref: 'AWS::Region'
                         - Ref: 'AWS::AccountId'
-                          # TODO: Figure out how to add the cognito user pool id here securely.
-                          # Is it sensitive? Can it be an input variable to running serverless?
-                          # Going to leave the wildcard here for now to get it working
-                        - 'userpool/*'
+                        - "userpool/${opt:cognito_pool_id}"
                 - Effect: Allow
                   Action:
                     - dynamodb:PutItem
