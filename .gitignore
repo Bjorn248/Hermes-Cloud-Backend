@@ -11,10 +11,6 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-user_registration
-device_registration
-*.zip
-
 # Serverless directories
 .serverless
 
