@@ -14,3 +14,9 @@
 user_registration
 device_registration
 *.zip
+
+# Serverless directories
+.serverless
+
+# golang output binary directory
+bin
