@@ -22,31 +22,18 @@ frameworkVersion: "=1.28.0"
 provider:
   name: aws
   runtime: go1.x
+  # apiGateway:
+  #   restApiId:
+  #     Ref: HermesApiGateway
+  #   restApiResources:
+  #     Fn::GetAtt:
+  #         - HermesAPIGW
+  #         - RootResourceId
 
 # you can overwrite defaults here
   stage: dev
   region: us-east-2
   profile: pbj
-
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
-
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
 
 package:
  exclude:
@@ -60,48 +47,46 @@ functions:
     role: userRegistrationRole
     environment:
       COGNITO_APP_CLIENT_ID: ${opt:cognito_app_client_id}
+    events:
+      - http:
+          path: register
+          method: post
   device_registration:
     handler: bin/device_registration
     role: deviceRegistrationRole
+    events:
+      - http:
+          path: device
+          method: post
+          request:
+            parameters:
+              headers:
+                X-HERMES-CLOUD-TOKEN: true
+          authorizer:
+            identitySource: method.request.header.X-HERMES-CLOUD-TOKEN
+            arn: ${opt:user_pool_arn}
+#          authorizer:
+#            type: COGNITO_USER_POOLS
+#            authorizerId:
+#              Ref: ApiGatewayAuthorizer
   device_update:
     handler: bin/device_update
     role: deviceUpdateRole
-
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
-# events:
-#    events:
-#      - http:
-#          path: users/create
-#          method: get
-#      - s3: ${env:BUCKET}
-#      - schedule: rate(10 minutes)
-#      - sns: greeter-topic
-#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
-#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
-#      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
-#      - iot:
-#          sql: "SELECT * FROM 'some_topic'"
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - "aws.ec2"
-#            detail-type:
-#              - "EC2 Instance State-change Notification"
-#            detail:
-#              state:
-#                - pending
-#      - cloudwatchLog: '/aws/lambda/hello'
-#      - cognitoUserPool:
-#          pool: MyUserPool
-#          trigger: PreSignUp
-
-#    Define function environment variables here
-#    environment:
-#      variable2: value2
-
-# you can add CloudFormation resource templates here
+    events:
+      - http:
+          path: device
+          method: put
+          request:
+            parameters:
+              headers:
+                X-HERMES-CLOUD-TOKEN: true
+          authorizer:
+            identitySource: method.request.header.X-HERMES-CLOUD-TOKEN
+            arn: ${opt:user_pool_arn}
+#          authorizer:
+#            type: COGNITO_USER_POOLS
+#            authorizerId:
+#              Ref: ApiGatewayAuthorizer
 resources:
   Resources:
     userRegistrationRole:
@@ -252,3 +237,31 @@ resources:
                         - Ref: 'AWS::Region'
                         - Ref: 'AWS::AccountId'
                         - 'table/devices'
+#    HermesAPIGW:
+#      Type: AWS::ApiGateway::RestApi
+#      Properties:
+#        Name: HermesApiGateway
+#    ApiGatewayAuthorizer:
+#      Type: AWS::ApiGateway::Authorizer
+#      Properties:
+#        AuthorizerResultTtlInSeconds: 300
+#        IdentitySource: method.request.header.X-HERMES-CLOUD-TOKEN
+#        Name: Cognito
+#        RestApiId:
+#          Ref: HermesApiGateway
+#        Type: COGNITO_USER_POOLS
+#        ProviderARNs:
+#          - ${opt:user_pool_arn}
+#  Outputs:
+#    apiGatewayRestApiId:
+#      Value:
+#        Ref: HermesApiGateway
+#      Export:
+#        Name: apiGateway-restApiId
+#    apiGatewayRestApiRootResourceId:
+#      Value:
+#         Fn::GetAtt:
+#          - HermesAPIGW
+#          - RootResourceId
+#      Export:
+#        Name: apiGateway-rootResourceId
