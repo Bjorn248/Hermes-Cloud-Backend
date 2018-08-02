@@ -34,6 +34,24 @@ type Response struct {
 // CreateDevice is the lambda function handler
 func CreateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
+	var evt DeviceRegEvent
+	err := json.Unmarshal([]byte(req.Body), &evt)
+	if err != nil {
+		resp := Response{
+			Message: "Error unmarshalling request body",
+			Error:   err.Error(),
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
 	authorizer := req.RequestContext.Authorizer
 	if authorizer["claims"] == "" {
 		resp := Response{
@@ -80,24 +98,6 @@ func CreateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (event
 			panic(err)
 		}
 		return events.APIGatewayProxyResponse{Body: string(marshalledResponse), StatusCode: 403}, nil
-	}
-
-	var evt DeviceRegEvent
-	err := json.Unmarshal([]byte(req.Body), &evt)
-	if err != nil {
-		resp := Response{
-			Message: "Error unmarshalling request body",
-			Error:   err.Error(),
-		}
-		marshalledResponse, err := json.Marshal(resp)
-		if err != nil {
-			log.Println("Error marshalling response:", resp)
-			panic(err)
-		}
-		return events.APIGatewayProxyResponse{
-			Body:       string(marshalledResponse),
-			StatusCode: 400,
-		}, nil
 	}
 
 	if evt.Name == "" {
