@@ -67,6 +67,21 @@ func CreateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (event
 		}, nil
 	}
 
+	emailFromToken := typedAuthorizer["email"]
+
+	if emailFromToken != evt.Owner {
+		resp := Response{
+			Message: "Not authorized to perform this action",
+			Error:   "Not authorized",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{Body: string(marshalledResponse), StatusCode: 403}, nil
+	}
+
 	var evt DeviceRegEvent
 	err := json.Unmarshal([]byte(req.Body), &evt)
 	if err != nil {
@@ -167,21 +182,6 @@ func CreateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (event
 			Body:       string(marshalledResponse),
 			StatusCode: 400,
 		}, nil
-	}
-
-	emailFromToken := typedAuthorizer["email"]
-
-	if emailFromToken != evt.Owner {
-		resp := Response{
-			Message: "Not authorized to perform this action",
-			Error:   "Not authorized",
-		}
-		marshalledResponse, err := json.Marshal(resp)
-		if err != nil {
-			log.Println("Error marshalling response:", resp)
-			panic(err)
-		}
-		return events.APIGatewayProxyResponse{Body: string(marshalledResponse), StatusCode: 403}, nil
 	}
 
 	sess := session.Must(session.NewSession())
