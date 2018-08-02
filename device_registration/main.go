@@ -65,7 +65,6 @@ func CreateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (event
 			Body:       string(marshalledResponse),
 			StatusCode: 500,
 		}, nil
-
 	}
 
 	var evt DeviceRegEvent
