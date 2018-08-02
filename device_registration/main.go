@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	// "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"os"
+	"regexp"
+	"unicode/utf8"
 )
 
 // DeviceRegEvent defines the request structure of this device registration request
@@ -26,10 +28,162 @@ type DeviceRegEvent struct {
 // Response defines the response structure to this device registration request
 type Response struct {
 	Message string `json:"Response"`
+	Error   string `json:"Error"`
 }
 
 // CreateDevice is the lambda function handler
-func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
+func CreateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+
+	authorizer := req.RequestContext.Authorizer
+	if authorizer["claims"] == "" {
+		resp := Response{
+			Message: "No authorization token provided",
+			Error:   "Missing token",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 401,
+		}, nil
+	}
+	typedAuthorizer, ok := authorizer["claims"].(map[string]interface{})
+	if ok != true {
+		resp := Response{
+			Message: "Error getting authorization information from cognito token",
+			Error:   "Error unmarshaling request context",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 500,
+		}, nil
+
+	}
+
+	var evt DeviceRegEvent
+	err := json.Unmarshal([]byte(req.Body), &evt)
+	if err != nil {
+		resp := Response{
+			Message: "Error unmarshalling request body",
+			Error:   err.Error(),
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
+	if evt.Name == "" {
+		resp := Response{
+			Message: "name missing from request JSON",
+			Error:   "Invalid Request",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
+	if evt.MAC == "" {
+		resp := Response{
+			Message: "mac missing from request JSON",
+			Error:   "Invalid Request",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
+	if evt.Owner == "" {
+		resp := Response{
+			Message: "owner missing from request JSON",
+			Error:   "Invalid Request",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
+	// Validate the MAC
+	validMAC, err := regexp.MatchString("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$", evt.MAC)
+	if validMAC == false {
+		resp := Response{
+			Message: fmt.Sprintf("Invalid MAC Address Provided: %s", evt.MAC),
+			Error:   "Invalid Request",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
+	// Validate the Device Name
+	// Needs to be 50 characters or less
+	if utf8.RuneCountInString(evt.Name) > 50 {
+		resp := Response{
+			Message: "Provided name too long",
+			Error:   "Invalid Request",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       string(marshalledResponse),
+			StatusCode: 400,
+		}, nil
+	}
+
+	emailFromToken := typedAuthorizer["email"]
+
+	if emailFromToken != evt.Owner {
+		resp := Response{
+			Message: "Not authorized to perform this action",
+			Error:   "Not authorized",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{Body: string(marshalledResponse), StatusCode: 403}, nil
+	}
 
 	sess := session.Must(session.NewSession())
 
@@ -69,33 +223,30 @@ func CreateDevice(ctx context.Context, evt DeviceRegEvent) (Response, error) {
 		Item:                dynamoInputItem,
 	}
 
-	_, err := dynamoService.PutItem(&dynamoInput)
+	_, err = dynamoService.PutItem(&dynamoInput)
 	if err != nil {
-		return Response{Message: "Error creating dynamo device entry: "}, err
+		resp := Response{
+			Message: fmt.Sprintf("The following MAC is already registered: %s", evt.MAC),
+			Error:   "Duplicate MAC Error",
+		}
+		marshalledResponse, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("Error marshalling response:", resp)
+			panic(err)
+		}
+		return events.APIGatewayProxyResponse{Body: string(marshalledResponse), StatusCode: 409}, nil
 	}
 
-	/*
-		var userDeviceMap map[string]*dynamodb.AttributeValue
-		userDeviceMap = make(map[string]*dynamodb.AttributeValue)
+	resp := Response{
+		Message: fmt.Sprintf("Successfully registered device %s", evt.MAC),
+	}
+	marshalledResponse, err := json.Marshal(resp)
+	if err != nil {
+		log.Println("Error marshalling response:", resp)
+		panic(err)
+	}
 
-		trueBool := true
-
-		trueAttributeValue := dynamodb.AttributeValue{
-			BOOL: &trueBool,
-		}
-
-		userDeviceMap[evt.MAC] = &trueAttributeValue
-
-		userDeviceAttributeValue := dynamodb.AttributeValue{
-			M: userDeviceMap,
-		}
-	*/
-
-	lc, _ := lambdacontext.FromContext(ctx)
-
-	log.Printf("%+v\n", lc)
-
-	return Response{Message: fmt.Sprintf("Successfully registered device %s", evt.MAC)}, nil
+	return events.APIGatewayProxyResponse{Body: string(marshalledResponse), StatusCode: 200}, nil
 }
 
 func main() {
