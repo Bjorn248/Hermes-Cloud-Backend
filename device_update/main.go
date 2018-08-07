@@ -112,6 +112,26 @@ func UpdateDevice(ctx context.Context, req events.APIGatewayProxyRequest) (event
 		}
 	}
 
+	// Validate the status
+	// Needs to be 'offline' or 'online'
+	if evt.Status != "" {
+		if evt.Status != "offline" && evt.Status != "online" {
+			resp := Response{
+				Message: "status can only have value 'offline' or 'online'",
+				Error:   "Invalid Request",
+			}
+			marshalledResponse, err := json.Marshal(resp)
+			if err != nil {
+				log.Println("Error marshalling response:", resp)
+				panic(err)
+			}
+			return events.APIGatewayProxyResponse{
+				Body:       string(marshalledResponse),
+				StatusCode: 400,
+			}, nil
+		}
+	}
+
 	authorizer := req.RequestContext.Authorizer
 	if authorizer["claims"] == "" {
 		resp := Response{
