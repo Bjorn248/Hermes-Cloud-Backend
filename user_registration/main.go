@@ -93,7 +93,7 @@ func CreateUser(ctx context.Context, req events.APIGatewayProxyRequest) (events.
 	validEmail, err := regexp.MatchString("(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$)", evt.Email)
 	if validEmail == false {
 		resp := Response{
-			Message: fmt.Sprintf("Invalid MAC Address Provided: %s", evt.Email),
+			Message: fmt.Sprintf("Invalid Email Address Provided: %s", evt.Email),
 			Error:   "Invalid Request",
 		}
 		marshalledResponse, err := json.Marshal(resp)

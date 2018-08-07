@@ -8,8 +8,9 @@ Lambda functions that serve as the backend API to hermes cloud web
 In order to deploy the functions with serverless two additional variables need to be passed
 - cognito_app_client_id
 - cognito_pool_id
+- user_pool_arn
 
 An example deploy would look like the following
 ```
-serverless deploy -v --cognito_app_client_id PLACEHOLDER --cognito_pool_id PLACEHOLDER
+serverless deploy -v --cognito_app_client_id PLACEHOLDER --cognito_pool_id PLACEHOLDER --user_pool_arn PLACEHOLDER
 ```
