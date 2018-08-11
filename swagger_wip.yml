@@ -1,7 +1,7 @@
 swagger: "2.0"
 info:
   description: "These are the series of endpoints that make up the Hermes Cloud Backend"
-  version: "0.0.1"
+  version: "0.0.2"
   title: "Hermes Cloud Backend"
   contact:
     email: "bjorn248@gmail.com"
