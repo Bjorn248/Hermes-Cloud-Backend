@@ -40,9 +40,11 @@ paths:
         200:
           description: "User created successfully"
           schema:
-            $ref: '#/definitions/UserAndDeviceCreationResponse'
+            $ref: '#/definitions/UserCreationResponse'
         409:
           description: "Conflict: User Exists"
+          schema:
+            $ref: '#/definitions/UserCreationResponseConflict'
   /device:
     post:
       tags:
@@ -65,12 +67,24 @@ paths:
         description: "Required info to register a device"
         required: true
         schema:
-          $ref: '#/definitions/DeviceRegistrationRequest'
+          $ref: '#/definitions/DeviceCreationRequest'
       responses:
         200:
           description: "Device created successfully"
           schema:
-            $ref: '#/definitions/UserAndDeviceCreationResponse'
+            $ref: '#/definitions/DeviceCreationResponse'
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: '#/definitions/DeviceCreationResponseBadRequest'
+        403:
+          description: "Not Authorized"
+          schema:
+            $ref: '#/definitions/DeviceCreationResponseNoAuth'
+        409:
+          description: "Conflict"
+          schema:
+            $ref: '#/definitions/DeviceCreationResponseConflict'
     put:
       tags:
       - "device"
@@ -94,36 +108,100 @@ paths:
         schema:
           $ref: '#/definitions/DeviceModificationRequest'
       responses:
-        200:
+        204:
           description: "Device updated successfully"
+        400:
+          description: "Bad Request"
           schema:
-            $ref: '#/definitions/UserAndDeviceCreationResponse'
+            $ref: '#/definitions/DeviceModificationResponseBadRequest'
+        403:
+          description: "Forbidden"
+          schema:
+            $ref: '#/definitions/DeviceModificationResponseForbidden'
+        500:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/DeviceModificationResponseError'
 definitions:
   UserCreationRequest:
     type: "object"
     properties:
       email:
         type: "string"
+        example: "example@example.com"
       password:
         type: "string"
-  UserAndDeviceCreationResponse:
+        example: "HelloThere@1234"
+  UserCreationResponse:
     type: "object"
     properties:
       Response:
         type: "string"
-  DeviceRegistrationRequest:
+        example: "Successfully created user example@example.com"
+      Error:
+        type: "string"
+        example: ""
+  UserCreationResponseConflict:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Email is already registered: example@example.com"
+      Error:
+        type: "string"
+        example: "User Creation Error"
+  DeviceCreationRequest:
     type: "object"
     properties:
       mac:
         type: "string"
+        example: "00:0a:95:9d:68:24"
       name:
         type: "string"
+        example: "example-device-name"
       owner:
         type: "string"
+        example: "example@example.com"
     required:
       - mac
       - name
       - owner
+  DeviceCreationResponse:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Successfully registered device 00:0a:95:9d:68:24"
+      Error:
+        type: "string"
+        example: ""
+  DeviceCreationResponseConflict:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "The following MAC is already registered: 00:0a:95:9d:68:24"
+      Error:
+        type: "string"
+        example: "Duplicate MAC Error"
+  DeviceCreationResponseNoAuth:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Not authorized to perform this action"
+      Error:
+        type: "string"
+        example: "Not authorized"
+  DeviceCreationResponseBadRequest:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Error unmarshalling request body"
+      Error:
+        type: "string"
+        example: "unexpected end of JSON input"
   DeviceModificationRequest:
     type: "object"
     properties:
@@ -135,6 +213,33 @@ definitions:
         type: "string"
     required:
       - mac
+  DeviceModificationResponseError:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Error Updating Device"
+      Error:
+        type: "string"
+        example: "Something went wrong"
+  DeviceModificationResponseBadRequest:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Error unmarshalling request body"
+      Error:
+        type: "string"
+        example: "unexpected end of JSON input"
+  DeviceModificationResponseForbidden:
+    type: "object"
+    properties:
+      Response:
+        type: "string"
+        example: "Not authorized to perform this action"
+      Error:
+        type: "string"
+        example: "Not authorized"
 externalDocs:
   description: "Contribute"
   url: "https://github.com/Bjorn248/Hermes-Cloud-Backend"
